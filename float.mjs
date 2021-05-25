@@ -1,8 +1,7 @@
-import { readFileSync } from 'fs';
-
 if (process.argv[2] == '-h') {
-    console.log('\nExample of running a script: node FILE_NAME FILE_INPUT.txt -encode/-decode\n\n' +
-    'Warning!!! Hexadecimal letters in the input file must be in upper case\n');
+    console.log('\nExample of running a script: node FILE_NAME INPUT_NUMBER -encode/-decode\n\n' +
+    'Warning!!! Hexadecimal letters in the input number must be in upper case\n');
+    process.exit(0);
 }
 
 var wholePart = '';
@@ -34,98 +33,55 @@ function Dec2BinFractionalPart(localFractionalPart) {
     else fractionalPart += doubledLocalFractionalPart;
 }
 
+let lettersDictionary = {
+    'A': '1010',
+    'B': '1011',
+    'C': '1100',
+    'D': '1101',
+    'E': '1110',
+    'F': '1111'
+}
 function Hex2Bin(hex) {
     let result = '';
-    for (let i = 0; i < hex.length; ++i) {
-        switch (hex[i]) {
-            case 'A':
-                result += '1010';
-                break;
-            case 'B':
-                result += '1011';
-                break;
-            case 'C':
-                result += '1100';
-                break;
-            case 'D':
-                result += '1101';
-                break;
-            case 'E':
-                result += '1110';
-                break;
-            case 'F':
-                result += '1111';
-                break;
-            default:
-                Dec2BinWholePart(parseInt(hex[i]));
-                let bin = wholePart;
-                wholePart = '';
-                while (bin.length < 4) bin = '0' + bin;
-                result += bin;
-                break;
+    for (let i = 0; i < hex.length; ++i)
+        if (hex[i] in lettersDictionary) result += lettersDictionary[hex[i]];
+        else {
+            Dec2BinWholePart(parseInt(hex[i]));
+            let bin = wholePart;
+            wholePart = '';
+            while (bin.length < 4) bin = '0' + bin;
+            result += bin;
         }
-    }
     return result;
 }
+
+let equivalentValuesToNumbers = {
+    10: 'A',
+    11: 'B',
+    12: 'C',
+    13: 'D',
+    14: 'E',
+    15: 'F'
+}
+let borderlineСases = [NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, '-0', '0'];
+let borderlineEquivalents = ['7FC00000', '7F800000', 'FF800000', '80000000', '00000000'];
 
 if (process.argv[3] == '-encode') {
     String.prototype.hexEncode = function() {
         let result = '';
         for (let i = 0; i < this.length; i += 4) {
             let hex = parseInt(this.substr(i, 4), 2);
-            if (hex > 9)
-                switch (hex) {
-                    case 10:
-                        hex = 'A';
-                        break;
-                    case 11:
-                        hex = 'B';
-                        break;
-                    case 12:
-                        hex = 'C';
-                        break;
-                    case 13:
-                        hex = 'D';
-                        break;
-                    case 14:
-                        hex = 'E';
-                        break;
-                    case 15:
-                        hex = 'F';
-                        break;
-                    case 16:
-                        hex = 'G';
-                        break;
-                }
-            result = result + hex;
+            if (hex > 9) hex = equivalentValuesToNumbers[hex];
+            result += hex;
         }
         return result;
     }
 
-    /*function dec2bin(dec) {
-        return (dec >>> 0).toString(2);
-    }*/
+    let input = process.argv[2];
 
-    let input = readFileSync('input.txt', 'utf8');
-
-    if (isNaN(input)) {
-        console.log('7FC00000');
-        process.exit(0);
-    }
-    else if (input === Number.POSITIVE_INFINITY) {
-        console.log('7F800000');
-        process.exit(0);
-    }
-    else if (input === Number.NEGATIVE_INFINITY) {
-        console.log('FF800000');
-        process.exit(0);
-    }
-    else if (input == '-0') {
-        console.log('80000000');
-        process.exit(0);
-    }
-    else if (input == '0') {
-        console.log('00000000');
+    let index = borderlineСases.indexOf(input);
+    if (index != -1) {
+        console.log(borderlineEquivalents[index]);
         process.exit(0);
     }
         
@@ -154,9 +110,7 @@ if (process.argv[3] == '-encode') {
         bias = inputParts.indexOf('.') - i - 1;
     else bias = inputParts.indexOf('.') - i;
     let pointLocation;
-    //if (bias < 0)
-        pointLocation = inputParts.indexOf('.') - bias;
-    //else pointLocation = inputParts.indexOf('.') - bias;
+    pointLocation = inputParts.indexOf('.') - bias;
     if (bias != 0) {
         inputParts = inputParts.substr(pointLocation - 1);
         let bits = [];
@@ -174,7 +128,6 @@ if (process.argv[3] == '-encode') {
         }
         inputParts = bits.join('');
     }
-    //inputParts = inputParts / Math.pow(10, bias);
     let mantissa;
     if (inputParts.toString().split('.').length > 1)
         mantissa = inputParts.toString().split('.')[1];
@@ -191,26 +144,11 @@ if (process.argv[3] == '-encode') {
     console.log(result);
 }
 else if (process.argv[3] == '-decode') {
-    let input = readFileSync('input.txt', 'utf8');
+    let input = process.argv[2];
 
-    if (input == '7FC00000') {
-        console.log(NaN);
-        process.exit(0);
-    }
-    else if (input == '7F800000') {
-        console.log(Number.POSITIVE_INFINITY);
-        process.exit(0);
-    }
-    else if (input == 'FF800000') {
-        console.log(Number.NEGATIVE_INFINITY);
-        process.exit(0);
-    }
-    else if (input == '80000000') {
-        console.log('-0');
-        process.exit(0);
-    }
-    else if (input == '00000000') {
-        console.log('0');
+    let index = borderlineEquivalents.indexOf(input);
+    if (index != -1) {
+        console.log(borderlineСases[index]);
         process.exit(0);
     }
 
